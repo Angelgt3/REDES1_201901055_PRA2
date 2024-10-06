@@ -1,8 +1,8 @@
-1X2x# Manual Técnico
+# Manual Técnico
 
 ## Tabla Resumen
-| Dispositivo  | Interfaz |      IP     | Máscara de subred 
-|--------------|----------|-------------|-------------------
+| Dispositivo  | Interfaz |      IP     | Máscara de subred |
+|--------------|----------|-------------|-------------------|
 | R1           | s1/0     | 10.0.0.1    | /30               |
 | R1           | f0/0     | 152.168.1.2 | /29               |
 | R1           | f0/1     | 152.168.2.2 | /29               |
@@ -30,143 +30,155 @@
 
 ![Topologia](imagenes/Topologia.jpg)
 
+## 1. Configuración de Routers R1, R2 y R6, Switches SW1 y SW3, VPC11 y VPC14
 
-## Detalle de los comandos usados
+### Configuración de Routers
 
-### SERIAL
-R1
-enable
-configure terminal
-interface s0/0
-ip address 10.0.0.1 255.255.255.252
-no shutdown
-exit
+#### **Router R1**
+```
+enable  
+configure terminal  
+hostname R1  
+interface FastEthernet0/0  
+ip address [IP_R1_F0/0] [Máscara_R1_F0/0]  
+no shutdown  
+exit  
+interface FastEthernet0/1  
+ip address [IP_R1_F0/1] [Máscara_R1_F0/1]  
+no shutdown  
+exit  
+ip route [Red_Destino] [Máscara] [Next_Hop]  
+exit  
+```
+#### **Router R2**
+```
+enable  
+configure terminal  
+hostname R2  
+interface FastEthernet0/0  
+ip address [IP_R2_F0/0] [Máscara_R2_F0/0]  
+no shutdown  
+exit  
+interface FastEthernet0/1  
+ip address [IP_R2_F0/1] [Máscara_R2_F0/1]  
+no shutdown  
+exit  
+ip route [Red_Destino] [Máscara] [Next_Hop]  
+exit  
+```
 
-R4
-enable
-configure terminal
-interface s0/0
-ip address 10.0.0.1 255.255.255.252
-no shutdown
-exit
+#### **Router R6**
+```
+enable  
+configure terminal  
+hostname R6  
+interface FastEthernet0/0  
+ip address [IP_R6_F0/0] [Máscara_R6_F0/0]  
+no shutdown  
+exit  
+interface FastEthernet0/1  
+ip address [IP_R6_F0/1] [Máscara_R6_F0/1]  
+no shutdown  
+exit  
+ip route [Red_Destino] [Máscara] [Next_Hop]  
+exit  
+```
+### Configuración de Switches
+
+#### **Switch SW1**
+```
+enable  
+configure terminal  
+hostname SW1  
+interface range FastEthernet0/1 - 24  
+channel-group 1 mode desirable  
+exit  
+```
+#### **Switch SW3**
+```
+enable  
+configure terminal  
+hostname SW3  
+interface range FastEthernet0/1 - 24  
+channel-group 1 mode active  
+exit  
+```
+### Configuración de VPCs
+
+#### **VPC11**
+```
+ip 192.168.0.11 255.255.255.0 192.168.0.1  
+```
+#### **VPC14**
+```
+ip 192.168.0.14 255.255.255.0 192.168.0.1  
+```
+
+## 2. Resumen de los Comandos Usados
+
+### **Creación de Rutas Estáticas**
+
+```
+ip route [Red_Destino] [Máscara] [Next_Hop]
+```
+- **[IP_R1_F0/0], [IP_R2_F0/0], [IP_R6_F0/0]**: Son las direcciones IP que asignas a las interfaces de cada router según la tabla de configuración.
+
+  Ejemplo en el Router R1:
+  ip address 152.168.1.2 255.255.255.248
+
+- **[Máscara]**: Es la máscara de subred que determina cuántos bits corresponden a la red y cuántos a los hosts en la IP.
+
+  Ejemplo:
+  ip address 152.168.1.2 255.255.255.248
+
+- **[Red_Destino]**: Es la red a la que quieres llegar utilizando una ruta estática.
+
+  Ejemplo para llegar desde R1 a la red de R2:
+  ip route 152.168.0.0 255.255.255.0 152.168.1.1
+
+- **[Next_Hop]**: Es la dirección IP del router adyacente, el cual es el siguiente salto al que se envían los paquetes para alcanzar la red destino.
 
 
-show ip interface brief
+### **Creación de PortChannel con PAGP y LACP**
 
+#### **PAGP** (Desirable Mode)
+```
+interface range FastEthernet0/1 - 24  
+channel-group 1 mode desirable  
+```
+#### **LACP** (Active Mode)
+```
+interface range FastEthernet0/1 - 24  
+channel-group 1 mode active  
+```
+### **Creación de IP Virtual con HSRP**
+```
+interface FastEthernet0/0  
+standby 1 ip [IP_Virtual]  
+standby 1 priority 110  
+standby 1 preempt  
+exit  
+```
+### **Configuración de VPCs**
+```
+ip [Dirección_IP] [Máscara] [Gateway]  
+```
 
-### Configurar PortChannel con PAGP en SW0:
-enable
-configure terminal
-interface range fastethernet0/21 - 22
-channel-protocol pagp
-channel-group 1 mode desirable
-no shutdown
-exit
+## 3. Comandos para la Verificación del Funcionamiento
 
-### Configurar PortChannel con PAGP en SW1
-enable
-configure terminal
-interface range fastethernet0/21 - 22
-channel-protocol pagp
-channel-group 1 mode auto
-no shutdown
-exit
-
-### Configurar PortChannel con LACP en SW2:
-enable
-configure terminal
-interface range fastethernet0/23 - 24
-channel-protocol lacp
-channel-group 1 mode active
-no shutdown
-exit
-
-### Configurar PortChannel con LACP en SW2:
-enable
-configure terminal
-interface range fastethernet0/23 - 24
-channel-protocol lacp
-channel-group 1 mode passive
-no shutdown
-exit
-
-### Verificación del PortChannel:
-show etherchannel summary
-
-show run interface po1
-
-### Configuración de HSRP en R2, R3, R5 Y R6:
-enable
-configure terminal
-interface f0/0
-ip address 152.168.0.2 255.255.255.0
-standby 1 ip 152.168.0.1
-standby 1 priority 110
-standby 1 preempt
-no shutdown
-exit
-
-
-enable
-configure terminal
-interface f0/0
-ip address 152.168.0.3 255.255.255.0
-standby 1 ip 152.168.0.1
-standby 1 priority 100
-standby 1 preempt
-no shutdown
-exit
-
-enable
-configure terminal
-interface f0/1
-ip address 152.178.1.2 255.255.255.248
-standby 1 ip 152.178.0.1
-standby 1 priority 110
-standby 1 preempt
-no shutdown
-exit
-
-enable
-configure terminal
-interface f0/0
-ip address 152.178.2.2 255.255.255.248
-standby 1 ip 152.178.0.1
-standby 1 priority 100
-standby 1 preempt
-no shutdown
-exit
-
-
-### Configurar las rutas estáticas necesarias para garantizar la comunicación en ambas vías entre VPC11, VPC13, VPC12 y VPC14.
-
-R2
-enable
-configure terminal
-ip route 152.178.0.0 255.255.255.0 152.168.0.1
-exit
-
-R3
-enable
-configure terminal
-ip route 152.178.0.0 255.255.255.0 152.168.0.1
-exit
-
-R5
-enable
-configure terminal
-ip route 152.168.0.0 255.255.255.0 152.178.0.1
-exit
-
-R6
-enable
-configure terminal
-ip route 152.168.0.0 255.255.255.0 152.178.0.1
-exit
-
-enable
-configure terminal
-interface FastEthernet0/1
-ip address 152.168.0.2 255.255.255.0
-no shutdown
-exit
+### **Verificación de Rutas Estáticas**
+```
+show ip route  
+```
+### **Verificación de HSRP**
+```
+show standby brief  
+```
+### **Verificación de PortChannel**
+```
+show etherchannel summary  
+```
+### **Verificación de Conectividad (Ping)**
+```
+ping [Dirección_IP]  
+```
