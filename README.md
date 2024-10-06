@@ -28,7 +28,7 @@
 
 **Topologia**           
 
-![Topologia](imagenes/Topologia.jpg)
+![Topologia](imagenes/topologia.jpg)
 
 ## 1. Configuración de Routers R1, R2 y R6, Switches SW1 y SW3, VPC11 y VPC14
 
